@@ -49,3 +49,44 @@ bin_ip = "00001010000000010000000111000011"
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
 """
+ip_mask = input("Введите IP-сети в формате 10.1.1.0/24: ")
+
+ip, mask = ip_mask.split("/")
+mask = int(mask)
+ip_octets = ip.split(".")
+
+# двоичное представление адреса хоста
+bin_ip_list = []
+for octet in ip_octets:
+    bin_ip_list.append("{:08b}".format(int(octet)))
+bin_ip = "".join(bin_ip_list)
+
+# адрес сети: первые mask битов адреса хоста + нули до 32 битов
+bin_network = bin_ip[:mask] + "0" * (32 - mask)
+
+# обратно в десятичные октеты
+network_octets = []
+for i in range(0, 32, 8):
+    network_octets.append(str(int(bin_network[i:i + 8], 2)))
+    
+print("Network:")
+for octet in network_octets:
+    print("{:10}".format(octet), end="")
+print()
+
+for i in range(0, 32, 8):
+    print("{:10}".format(bin_network[i:i + 8]), end="")
+print()
+
+print("Mask:")
+print("/{}".format(mask))
+
+mask_binary = "1" * mask + "0" * (32 - mask)
+
+for i in range(0, 32, 8):
+    print("{:10}".format(str(int(mask_binary[i:i + 8], 2))), end="")
+print()
+
+for i in range(0, 32, 8):
+    print("{:10}".format(mask_binary[i:i + 8]), end="")
+print()

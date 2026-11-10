@@ -30,3 +30,34 @@ Out[1]: '11111111111111111111111111110000'
 
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 """
+ip_mask = input("Введите IP-сети в формате 10.1.1.0/24: ")
+
+ip, mask = ip_mask.split("/")
+mask = int(mask)
+ip_octets = ip.split(".")
+
+print("Network:")
+for octet in ip_octets:
+     print("{:10}".format(octet), end="")
+print()
+
+for octet in ip_octets:
+    bin_octet = "{:08b}".format(int(octet))
+    print("{:10}".format(bin_octet), end="")
+print()
+
+print("Mask:")
+print("/{}".format(mask))
+
+mask_binary = "1" * mask + "0" * (32 - mask)
+
+mask_octets = []
+for i in range(0, 32, 8):
+    mask_octets.append(str(int(mask_binary[i:i + 8], 2)))
+for octet in mask_octets:
+     print("{:10}".format(octet), end="")
+print()
+
+for i in range(0, 32, 8):
+     print("{:10}".format(mask_binary[i:i + 8]), end="")
+print()
