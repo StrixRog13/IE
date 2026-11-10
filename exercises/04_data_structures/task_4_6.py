@@ -28,3 +28,19 @@ Next-Hop              {}
 Last update           {}
 Outbound Interface    {}
 """
+
+ospf_route = "10.0.24.0/24 [110/41] via 10.0.13.3, 3d18h, FastEthernet0/0"
+
+parts = ospf_route.split()
+
+prefix = parts[0]
+ad_metric = parts[1].strip("[]")
+next_hop = parts[3].rstrip(",")
+last_update = parts[4].rstrip(",")
+outbound_interface = parts[5]
+
+print(f"Prefix              {prefix}")
+print(f"AD/Metric           {ad_metric}")
+print(f"Next-Hop            {next_hop}")
+print(f"Last update         {last_update}")
+print(f"Outbound Interface  {outbound_interface}")

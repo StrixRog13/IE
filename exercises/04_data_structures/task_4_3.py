@@ -22,3 +22,7 @@
 """
 
 config = "switchport trunk allowed vlan 1,3,10,20,30,100"
+
+vlans = config.split()[-1]      # получаем часть строки с VLAN'ами: '1,3,10,20,30,100'
+result = vlans.split(",")       # разбиваем её по запятым в список
+print(result)

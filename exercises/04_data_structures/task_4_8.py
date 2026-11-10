@@ -26,3 +26,16 @@
 """
 
 ip = "192.168.3.1"
+
+ip = "192.168.3.1"
+
+octets = ip.split(".")        # ['192', '168', '3', '1']
+
+first_line = ""
+second_line = ""
+for octet in octets:
+    first_line += f"{octet:<10}"       # десятичное значение, ширина колонки 10
+    second_line += f"{int(octet):08b}  "  # двоичное значение (8 бит) + два пробела
+
+print(first_line)
+print(second_line)

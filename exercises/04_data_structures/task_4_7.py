@@ -16,3 +16,13 @@
 """
 
 mac = "AAAA:BBBB:CCCC"
+
+mac = "AAAA:BBBB:CCCC"
+
+# Убираем разделители, оставляем только шестнадцатеричные цифры
+mac_hex = mac.replace(":", "")
+
+# Переводим шестнадцатеричную запись в число, затем в двоичную
+mac_binary = bin(int(mac_hex, 16))[2:].zfill(48)
+
+print(mac_binary)
