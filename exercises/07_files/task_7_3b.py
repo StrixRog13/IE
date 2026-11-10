@@ -17,3 +17,24 @@ Enter VLAN number: 10
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
 """
+vlan_input = input("Enter VLAN number: ")
+
+if not vlan_input.isdigit():
+    print("VLAN должен быть числом")
+    sys.exit(1)
+
+vlan_needed = int(vlan_input)
+
+rows = []
+
+with open("CAM_table.txt") as f:
+    for line in f:
+        parts = line.split()
+        if len(parts) < 4 or not parts[0].isdigit():
+            continue
+        vlan, mac, typ, port = parts
+        if int(vlan) == vlan_needed:
+            rows.append((vlan, mac, port))
+
+for vlan, mac, port in rows:
+    print(f"{vlan}      {mac}      {port}")

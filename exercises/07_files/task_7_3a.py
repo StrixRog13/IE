@@ -40,3 +40,18 @@
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 
 """
+
+rows = []
+
+with open("CAM_table.txt") as f:
+    for line in f:
+        parts = line.split()
+        if len(parts) < 4 or not parts[0].isdigit():
+            continue
+        vlan, mac, typ, port = parts
+        rows.append([int(vlan), mac, port])
+
+rows.sort()
+
+for vlan, mac, port in rows:
+    print(f"{vlan}      {mac}      {port}")

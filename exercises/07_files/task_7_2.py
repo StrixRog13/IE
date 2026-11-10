@@ -39,3 +39,16 @@ interface Ethernet0/3
 ...
 
 """
+import sys
+
+if len(sys.argv) < 2:
+    print("Укажите имя конфигурационного файла: python task_7_2.py config_sw1.txt")
+    sys.exit(1)
+
+filename = sys.argv[1]
+
+with open(filename) as f:
+    for line in f:
+        if line.startswith("!") or not line.strip():
+            continue
+        print(line, end="")

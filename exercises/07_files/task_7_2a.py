@@ -16,4 +16,19 @@
 
 """
 
+import sys
+
+if len(sys.argv) < 2:
+    print("Укажите имя конфигурационного файла: python task_7_2a.py config_sw1.txt")
+    sys.exit(1)
+
+filename = sys.argv[1]
 ignore = ["duplex", "alias", "configuration"]
+
+with open(filename) as f:
+    for line in f:
+        if line.startswith("!") or not line.strip():
+            continue
+        if any(word in line for word in ignore):
+            continue
+        print(line, end="")
