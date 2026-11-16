@@ -23,3 +23,44 @@
 а затем запустить эту функцию в разных потоках для разных
 IP-адресов с помощью concurrent.futures (это надо сделать в функции ping_ip_addresses).
 """
+
+
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
+
+
+def ping_host(ip):
+    """Пингует один IP-адрес и возвращает его, если он доступен."""
+    result = subprocess.run(
+        ["ping", "-c", "3", "-n", ip],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if result.returncode == 0:
+        return ip
+
+
+def ping_ip_addresses(ip_list, limit=3):
+    """Проверяет пингуются ли IP-адреса параллельно в разных потоках.
+
+    Возвращает кортеж из двух списков:
+    - список доступных IP-адресов;
+    - список недоступных IP-адресов.
+    limit — максимальное количество параллельных потоков.
+    """
+    with ThreadPoolExecutor(max_workers=limit) as executor:
+        results = executor.map(ping_host, ip_list)
+    reachable = []
+    unreachable = []
+    for ip, status in zip(ip_list, results):
+        if status:
+            reachable.append(ip)
+        else:
+            unreachable.append(ip)
+    return reachable, unreachable
+
+
+if __name__ == "__main__":
+    ip_list = ["8.8.8.8", "255.255.255.255", "8.8.4.4", "192.168.100.1"]
+    print(ping_ip_addresses(ip_list))
+    print(ping_ip_addresses(ip_list, limit=2))

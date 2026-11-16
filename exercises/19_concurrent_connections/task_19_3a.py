@@ -56,3 +56,54 @@ commands = {
     "192.168.100.1": ["sh ip int br", "sh int desc"],
     "192.168.100.2": ["sh int desc"],
 }
+
+import yaml
+from concurrent.futures import ThreadPoolExecutor
+from netmiko import ConnectHandler
+
+
+def send_commands_to_device(device, commands):
+    """Подключается к одному устройству и выполняет команды,
+    возвращая список (команда, вывод).
+    """
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        result = []
+        for command in commands:
+            result.append((command, ssh.send_command(command)))
+        return result
+
+
+def send_command_to_devices(devices, commands_dict, filename, limit=3):
+    """Отправляет указанные команды show на устройства в параллельных
+    потоках и записывает вывод команд в файл.
+
+    Перед выводом каждой команды записывается имя хоста и сама команда.
+    Функция ничего не возвращает.
+    """
+    args = []
+    for device in devices:
+        name = device.get("name") or device.get("host")
+        args.append((device, commands_dict.get(name, [])))
+    with ThreadPoolExecutor(max_workers=limit) as executor:
+        results = executor.map(lambda a: send_commands_to_device(*a), args)
+    with open(filename, "w") as f:
+        for (device, _), outputs in zip(args, results):
+            hostname = device.get("name") or device.get("host")
+            for command, output in outputs:
+                f.write(f"{hostname}#{command}\n")
+                f.write(f"{output}\n\n")
+
+
+if __name__ == "__main__":
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    commands = {
+        "R1": ["sh ip int br", "sh ip route | ex -"],
+        "R1_2": ["sh ip int br", "sh int desc"],
+        "R3": ["sh int desc"],
+    }
+    send_command_to_devices(devices, commands, "result_19_3a.txt")
+
+
+

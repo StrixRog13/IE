@@ -34,3 +34,35 @@ Ethernet0/1                unassigned      YES NVRAM  administratively down down
 
 Проверить работу функции на устройствах из файла devices.yaml
 """
+import yaml
+from concurrent.futures import ThreadPoolExecutor
+from netmiko import ConnectHandler
+
+
+def send_show_to_device(device, command):
+    """Подключается к одному устройству и возвращает вывод команды."""
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        return ssh.send_command(command)
+
+
+def send_show_command_to_devices(devices, command, filename, limit=3):
+    """Отправляет одну и ту же команду show на устройства
+    в параллельных потоках и записывает вывод команд в файл.
+
+    Перед выводом команды записывается имя хоста и сама команда.
+    limit — максимальное количество параллельных потоков.
+    """
+    with ThreadPoolExecutor(max_workers=limit) as executor:
+        results = executor.map(send_show_to_device, devices, [command] * len(devices))
+    with open(filename, "w") as f:
+        for device, output in zip(devices, results):
+            hostname = device.get("name") or device.get("host")
+            f.write(f"{hostname}#{command}\n")
+            f.write(f"{output}\n\n")
+
+
+if __name__ == "__main__":
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+    send_show_command_to_devices(devices, "sh ip int br", "result.txt")
