@@ -50,3 +50,55 @@ Out[16]: 'config term\nEnter configuration commands, one per line.  End with CNT
 
 commands = ["logging 10.255.255.1", "logging buffered 20010", "no logging console"]
 command = "sh ip int br"
+
+import yaml
+from netmiko import ConnectHandler
+
+
+def send_show_command(device, command):
+    """Подключается к устройству по SSH и выполняет команду command."""
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        return ssh.send_command(command)
+
+
+def send_config_commands(device, config_commands, log=True):
+    """Выполняет конфигурационные команды на устройстве."""
+    with ConnectHandler(**device) as ssh:
+        ssh.enable()
+        return ssh.send_config_set(config_commands)
+
+
+def send_commands(device, *, show="", config=""):
+    """Вызывает send_show_command или send_config_commands
+    в зависимости от переданного аргумента.
+
+    Аргументы show/config передаются только по имени (keyword-only):
+    при позиционной передаче Python сам бросит TypeError.
+    Если переданы оба аргумента — ValueError.
+    """
+    if show and config:
+        raise ValueError(
+            "Можно передать только один из аргументов show или config"
+        )
+    if show:
+        return send_show_command(device, show)
+    if config:
+        return send_config_commands(device, config)
+
+
+if __name__ == "__main__":
+    with open("devices.yaml") as f:
+        devices = yaml.safe_load(f)
+
+    commands = [
+        "logging 0255.255.1",
+        "logging buffered 20010",
+        "no logging console",
+    ]
+    command = "sh ip int br"
+
+    for dev in devices:
+        print(send_commands(dev, show=command))
+        print(send_commands(dev, config=commands))
+
