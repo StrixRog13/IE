@@ -1,26 +1,29 @@
-# -*- coding: utf-8 -*-
-"""
-Задание 15.4
+import re
 
-Создать функцию get_ints_without_description, которая ожидает как аргумент
-имя файла, в котором находится конфигурация устройства.
 
-Функция должна обрабатывать конфигурацию и возвращать список имен интерфейсов,
-на которых нет описания (команды description).
+def get_ints_without_description(config_filename):
+    result = []
+    current_int = None
+    described = False
+    with open(config_filename) as f:
+        for line in f:
+            if not line.strip():
+                continue
+            if not line.startswith((" ", "\t")):
+                if current_int is not None and not described:
+                    result.append(current_int)
+                match = re.match(r"interface (\S+)", line)
+                if match:
+                    current_int = match.group(1)
+                    described = False
+                else:
+                    current_int = None
+            elif current_int is not None and re.match(r"\s+description\s", line):
+                described = True
+    if current_int is not None and not described:
+        result.append(current_int)
+    return result
 
-Пример итогового списка:
-["Loopback0", "Tunnel0", "Ethernet0/1", "Ethernet0/3.100", "Ethernet1/0"]
 
-Пример интерфейса с описанием:
-interface Ethernet0/2
- description To P_r9 Ethernet0/2
- ip address 10.0.19.1 255.255.255.0
- mpls traffic-eng tunnels
- ip rsvp bandwidth
-
-Интерфейс без описания:
-interface Loopback0
- ip address 10.1.1.1 255.255.255.255
-
-Проверить работу функции на примере файла config_r1.txt.
-"""
+if __name__ == "__main__":
+    print(get_ints_without_description("config_r1.txt"))

@@ -34,3 +34,29 @@ infiles = [
     "sh_cdp_n_r2.txt",
     "sh_cdp_n_r3.txt",
 ]
+
+def create_network_map(filenames):
+    """
+    filenames - список имен файлов с выводом show cdp neighbors
+
+    Возвращает словарь, описывающий соединения между устройствами,
+    объединенный из всех файлов. Структура та же, что в задании 11.1:
+    {(имя_устройства, локальный_интерфейс): (имя_соседа, интерфейс_соседа)}
+    Если одно и то же соединение встречается в нескольких файлах,
+    в итоговом словаре остается одна запись.
+    """
+    topology = {}
+    for filename in filenames:
+        with open(filename) as f:
+            topology.update(parse_cdp_neighbors(f.read()))
+
+    return topology
+if __name__ == "__main__":
+    filenames = [
+        "sh_cdp_n_sw1.txt",
+        "sh_cdp_n_r1.txt",
+        "sh_cdp_n_r2.txt",
+        "sh_cdp_n_r3.txt",
+    ]
+    for key, value in create_network_map(filenames).items():
+        print(key, value)

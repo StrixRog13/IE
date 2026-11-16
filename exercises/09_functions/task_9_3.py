@@ -23,3 +23,36 @@
 
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 """
+
+def get_int_vlan_map(config_filename):
+    """
+    config_filename - имя файла конфигурации
+
+    Возвращает кортеж из двух словарей:
+    - словарь портов в режиме access: {'FastEthernet0/12': 10, ...}
+    - словарь портов в режиме trunk: {'FastEthernet0/17': [10, 20, 30], ...}
+    """
+    access = {}
+    trunk = {}
+    intf = None
+    
+    with open(config_filename) as f:
+        for line in f:
+            parts = line.split()
+            if not parts:
+                continue
+            if parts[0] == "interface":
+                intf = parts[1]
+            elif parts[0] == "switchport" and intf is not None:
+                if parts[1] == "access" and parts[2] == "vlan":
+                    access[intf] = int(parts[-1])
+                elif parts[1] == "trunk" and parts[2] == "allowed":
+                    vlan_list = []
+                    for v in parts[-1].split(","):
+                        vlan_list.append(int(v))
+                    trunk[intf] = vlan_list
+
+    return (access, trunk)
+
+
+print(get_int_vlan_map("config_sw1.txt"))

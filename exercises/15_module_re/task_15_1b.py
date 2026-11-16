@@ -1,30 +1,19 @@
-# -*- coding: utf-8 -*-
-"""
-Задание 15.1b
+import re
 
-Проверить работу функции get_ip_from_cfg из задания 15.1a
-на конфигурации config_r2.txt.
+def get_ip_from_cfg(config_filename):
+    with open(config_filename) as f:
+        config = f.read()
+    current_int = None
+    result = {}
+    for line in config.splitlines():
+        int_match = re.match(r"interface (\S+)", line)
+        if int_match:
+            current_int = int_match.group(1)
+            continue
+        ip_match = re.match(r"\s+ip address (\S+) (\S+)", line)
+        if ip_match:
+            result.setdefault(current_int, []).append(ip_match.groups())
+    return result
 
-Обратите внимание, что на интерфейсе e0/1 назначены два IP-адреса:
-interface Ethernet0/1
- ip address 10.255.2.2 255.255.255.0
- ip address 10.254.2.2 255.255.255.0 secondary
-
-А в словаре, который возвращает функция get_ip_from_cfg, интерфейсу Ethernet0/1
-соответствует только один из них.
-
-Скопировать функцию get_ip_from_cfg из задания 15.1a и переделать ее таким
-образом, чтобы в значении словаря она возвращала список кортежей
-для каждого интерфейса.
-Если на интерфейсе назначен только один адрес, в списке будет один кортеж.
-Если же на интерфейсе настроены несколько IP-адресов, то в списке будет
-несколько кортежей. Ключом остается имя интерфейса.
-
-Проверьте функцию на конфигурации config_r2.txt и убедитесь, что интерфейсу
-Ethernet0/1 соответствует список из двух кортежей.
-
-Обратите внимание, что в данном случае, можно не проверять корректность
-IP-адреса, диапазоны адресов и так далее, так как обрабатывается вывод команды,
-а не ввод пользователя.
-
-"""
+if __name__ == "__main__":
+    print(get_ip_from_cfg("config_r2.txt"))

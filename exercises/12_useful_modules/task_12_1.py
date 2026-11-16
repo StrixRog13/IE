@@ -17,3 +17,32 @@ IP-адрес считается доступным, если выполнени
 
 Ограничение: Все задания надо выполнять используя только пройденные темы.
 """
+
+import subprocess
+
+
+def ping_ip_addresses(ip_addresses):
+    """
+    ip_addresses - список IP-адресов
+
+    Возвращает кортеж из двух списков:
+    * список доступных IP-адресов
+    * список недоступных IP-адресов
+    """
+    reachable = []
+    unreachable = []
+    for ip in ip_addresses:
+        reply = subprocess.run(
+            ["ping", ip, "-c", "2"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if reply.returncode == 0:
+            reachable.append(ip)
+        else:
+            unreachable.append(ip)
+
+    return (reachable, unreachable)
+
+if __name__ == "__main__":
+    print(ping_ip_addresses(["8.8.8.8", "255.255.255.255"]))

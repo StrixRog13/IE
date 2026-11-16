@@ -80,3 +80,38 @@ infiles = [
     "sh_cdp_n_r2.txt",
     "sh_cdp_n_r3.txt",
 ]
+
+from task_11_2 import create_network_map
+from draw_network_graph import draw_topology
+
+
+def unique_network_map(topology):
+    """
+    topology - словарь из create_network_map:
+    {(устройство, интерфейс): (сосед, интерфейс_соседа)}
+
+    Возвращает словарь, где каждая связь остаётся только один раз:
+    пары (A, B) и (B, A) описывают одно и то же соединение,
+    поэтому одна из них отбрасывается.
+    """
+    unique_links = set()
+    unique_topology = {}
+    for key, value in topology.items():
+        link = frozenset(key + value)
+        if link not in unique_links:
+            unique_links.add(link)
+            unique_topology[key] = value
+    return unique_topology
+
+
+if __name__ == "__main__":
+    filenames = [
+        "sh_cdp_n_sw1.txt",
+        "sh_cdp_n_r1.txt",
+        "sh_cdp_n_r2.txt",
+        "sh_cdp_n_r3.txt",
+    ]
+    topology = create_network_map(filenames)
+    unique_topology = unique_network_map(topology)
+    print(unique_topology)
+    draw_topology(unique_topology)
