@@ -1,0 +1,31 @@
+
+{% for vlan, vlan_name in vlans.items() %}
+
+vlan {{ vlan }}
+
+ name {{ vlan_name }}
+
+{% endfor %}
+
+{% for intf, vlan in access.items() %}
+
+interface {{ intf }}
+
+ switchport mode access
+
+ switchport access vlan {{ vlan }}
+
+{% endfor %}
+
+{% for intf, vlan_list in trunk.items() %}
+
+interface {{ intf }}
+
+{% for vlan in vlan_list %}
+
+ switchport trunk allowed vlan add {{ vlan }}
+
+{% endfor %}
+
+{% endfor %}
+

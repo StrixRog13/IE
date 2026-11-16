@@ -1,47 +1,103 @@
-# -*- coding: utf-8 -*-
-"""
-Задание 20.5a
 
-Создать функцию configure_vpn, которая использует
-шаблоны из задания 20.5 для настройки VPN на маршрутизаторах
-на основе данных в словаре data.
+import re
 
-Параметры функции:
-* src_device_params - словарь с параметрами подключения к устройству 1
-* dst_device_params - словарь с параметрами подключения к устройству 2
-* src_template - имя файла с шаблоном, который создает конфигурацию для строны 1
-* dst_template - имя файла с шаблоном, который создает конфигурацию для строны 2
-* vpn_data_dict - словарь со значениями, которые надо подставить в шаблоны
+import yaml
 
-Функция должна настроить VPN на основе шаблонов
-и данных на каждом устройстве с помощью netmiko.
-Функция возвращает кортеж с выводом команд с двух
-маршрутизаторов (вывод, которые возвращает метод netmiko send_config_set).
-Первый элемент кортежа - вывод с первого устройства (строка),
-второй элемент кортежа - вывод со второго устройства.
+from netmiko import ConnectHandler
 
-При этом, в словаре data не указан номер интерфейса Tunnel,
-который надо использовать.
-Номер надо определить самостоятельно на основе информации с оборудования.
-Если на маршрутизаторе нет интерфейсов Tunnel,
-взять номер 0, если есть взять ближайший свободный номер,
-но одинаковый для двух маршрутизаторов.
+from task_20_1 import generate_config
 
-Например, если на маршрутизаторе src такие интерфейсы: Tunnel1, Tunnel4.
-А на маршрутизаторе dest такие: Tunnel2, Tunnel3, Tunnel8.
-Первый свободный номер одинаковый для двух маршрутизаторов будет 5.
-И надо будет настроить интерфейс Tunnel 5.
+def create_vpn(src_device_params, dst_device_params, template1, template2, vpn_data_dict):
 
-Для этого задания тест проверяет работу функции на первых двух устройствах
-из файла devices.yaml. И проверяет, что в выводе есть команды настройки
-интерфейсов, но при этом не проверяет настроенные номера тунелей и другие команды.
-Они должны быть, но тест упрощен, чтобы было больше свободы выполнения.
-"""
+    """Настраивает GRE over IPSec VPN между двумя маршрутизаторами."""
+
+    tunnel_numbers = []
+
+    for device_params in (src_device_params, dst_device_params):
+
+        with ConnectHandler(**device_params) as ssh:
+
+            ssh.enable()
+
+output = ssh.send_command("show run | include interface Tunnel")
+
+            tunnel_numbers.extend(
+
+                int(num) for num in re.findall(r"interface Tunnel(\d+)", output)
+
+            )
+
+
+
+    tun_num = max(tunnel_numbers) + 1 if tunnel_numbers else 1
+
+    vpn_data_dict = dict(vpn_data_dict)
+
+    vpn_data_dict["tun_num"] = tun_num
+
+
+
+    config1 = generate_config(template1, vpn_data_dict)
+
+    config2 = generate_config(template2, vpn_data_dict)
+
+
+
+    results = []
+
+    for device_params, config in zip(
+
+        (src_device_params, dst_device_params), (config1, config2)
+
+    ):
+
+with ConnectHandler(**device_params) as ssh:
+
+            ssh.enable()
+
+            results.append(ssh.send_config_set(config.splitlines()))
+
+    return tuple(results)
+
+
+
+
+
+if __name__ == "__main__":
 
 data = {
-    "tun_num": None,
-    "wan_ip_1": "192.168.100.1",
-    "wan_ip_2": "192.168.100.2",
-    "tun_ip_1": "10.0.1.1 255.255.255.252",
-    "tun_ip_2": "10.0.1.2 255.255.255.252",
-}
+
+        "tun_num": None,
+
+        "wan_ip_1": "192.168.100.1",
+
+        "wan_ip_2": "192.168.100.2",
+
+        "tun_ip_1": "10.0.1.1 255.255.255.252",
+
+        "tun_ip_2": "10.0.1.2 255.255.255.252",
+
+    }
+
+    with open("devices.yaml") as f:
+
+        devices = yaml.safe_load(f)
+
+        output_src, output_dst = create_vpn(
+
+        devices[0],
+
+        devices[1],
+
+        "templates/gre_ipsec_vpn_1.txt",
+
+        "templates/gre_ipsec_vpn_2.txt",
+
+        data,
+
+    )
+
+    print(output_src)
+
+    print(output_dst)
+
