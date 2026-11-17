@@ -1,34 +1,41 @@
-# -*- coding: utf-8 -*-
-
-"""
-Задание 24.2d
-
-Скопировать класс MyNetmiko из задания 24.2c или задания 24.2b.
-
-Добавить параметр ignore_errors в метод send_config_set.
-Если передано истинное значение, не надо выполнять проверку на ошибки и метод должен
-работать точно так же как метод send_config_set в netmiko.
-Если значение ложное, ошибки должны проверяться.
-
-По умолчанию ошибки должны игнорироваться.
+from netmiko.cisco.cisco_ios import CiscoIosSSH
 
 
-In [2]: from task_24_2d import MyNetmiko
+class ErrorInCommand(Exception):
+    """Исключение генерируется, если при выполнении команды на оборудовании возникла ошибка"""
 
-In [3]: r1 = MyNetmiko(**device_params)
 
-In [6]: r1.send_config_set('lo')
-Out[6]: 'config term\nEnter configuration commands, one per line.  End with CNTL/Z.\nR1(config)#lo\n% Incomplete command.\n\nR1(config)#end\nR1#'
+class MyNetmiko(CiscoIosSSH):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.enable()
 
-In [7]: r1.send_config_set('lo', ignore_errors=True)
-Out[7]: 'config term\nEnter configuration commands, one per line.  End with CNTL/Z.\nR1(config)#lo\n% Incomplete command.\n\nR1(config)#end\nR1#'
+    def check_error_in_command(self, command, output):
+        error_markers = {
+            "Invalid input detected": r'Invalid input detected at "^" marker',
+            "Incomplete command": "Incomplete command",
+            "Ambiguous command": "Ambiguous command",
+        }
+        for marker, text in error_markers.items():
+            if marker in output:
+                raise ErrorInCommand(
+                    "При выполнении команды " + repr(command) + " на устройстве "
+                    + str(self.host) + " возникла ошибка -> " + text
+                )
 
-In [8]: r1.send_config_set('lo', ignore_errors=False)
----------------------------------------------------------------------------
-ErrorInCommand                            Traceback (most recent call last)
-<ipython-input-8-704f2e8d1886> in <module>()
-----> 1 r1.send_config_set('lo', ignore_errors=False)
+    def send_command(self, command, **kwargs):
+        output = super().send_command(command)
+        self.check_error_in_command(command, output)
+        return output
 
-...
-ErrorInCommand: При выполнении команды "lo" на устройстве 192.168.100.1 возникла ошибка "Incomplete command."
-"""
+    def send_config_set(self, commands, ignore_errors=False):
+        if isinstance(commands, str):
+            commands = [commands]
+        output = self.config_mode()
+        for command in commands:
+            if ignore_errors:
+                output += super().send_command(command)
+            else:
+                output += self.send_command(command)
+        output += self.exit_config_mode()
+        return output

@@ -1,28 +1,38 @@
-# -*- coding: utf-8 -*-
+from netmiko.cisco.cisco_ios import CiscoIosSSH
 
-"""
-Задание 24.2b
 
-Скопировать класс MyNetmiko из задания 24.2a.
+class ErrorInCommand(Exception):
+    """Исключение генерируется, если при выполнении команды на оборудовании возникла ошибка"""
 
-Дополнить функционал метода send_config_set netmiko и добавить в него проверку
-на ошибки с помощью метода _check_error_in_command.
 
-Метод send_config_set должен отправлять команды по одной и проверять каждую на ошибки.
-Если при выполнении команд не обнаружены ошибки, метод send_config_set возвращает
-вывод команд.
+class MyNetmiko(CiscoIosSSH):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.enable()
 
-In [2]: from task_24_2b import MyNetmiko
+    def check_error_in_command(self, command, output):
+        error_markers = {
+            "Invalid input detected": r'Invalid input detected at "^" marker',
+            "Incomplete command": "Incomplete command",
+            "Ambiguous command": "Ambiguous command",
+        }
+        for marker, text in error_markers.items():
+            if marker in output:
+                raise ErrorInCommand(
+                    "При выполнении команды " + repr(command) + " на устройстве "
+                    + str(self.host) + " возникла ошибка -> " + text
+                )
 
-In [3]: r1 = MyNetmiko(**device_params)
+    def send_command(self, command):
+        output = super().send_command(command)
+        self.check_error_in_command(command, output)
+        return output
 
-In [4]: r1.send_config_set('lo')
----------------------------------------------------------------------------
-ErrorInCommand                            Traceback (most recent call last)
-<ipython-input-2-8e491f78b235> in <module>()
-----> 1 r1.send_config_set('lo')
-
-...
-ErrorInCommand: При выполнении команды "lo" на устройстве 192.168.100.1 возникла ошибка "Incomplete command."
-
-"""
+    def send_config_set(self, commands):
+        if isinstance(commands, str):
+            commands = [commands]
+        output = self.config_mode()
+        for command in commands:
+            output += self.send_command(command)
+        output += self.exit_config_mode()
+        return output
