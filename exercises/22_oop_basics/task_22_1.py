@@ -1,46 +1,23 @@
-# -*- coding: utf-8 -*-
+class Topology:
+    def __init__(self, topology_dict):
+        self.topology = {}
+        for src, dst in topology_dict.items():
+            if self.topology.get(dst) != src:
+                self.topology[src] = dst
 
-"""
-Задание 22.1
+    def delete_link(self, src, dst):
+        if self.topology.get(src) == dst:
+            del self.topology[src]
+        elif self.topology.get(dst) == src:
+            del self.topology[dst]
+        else:
+            print("Такого соединения нет")
 
-Создать класс Topology, который представляет топологию сети.
-
-При создании экземпляра класса, как аргумент передается словарь,
-который описывает топологию. Словарь может содержать "дублирующиеся" соединения.
-Тут "дублирующиеся" соединения, это ситуация когда в словаре есть два соединения:
-    ("R1", "Eth0/0"): ("SW1", "Eth0/1")
-    ("SW1", "Eth0/1"): ("R1", "Eth0/0")
-
-Задача оставить только один из этих линков в итоговом словаре, не важно какой.
-
-В каждом экземпляре должна быть создана переменная topology, в которой содержится
-словарь топологии, но уже без "дублей". Переменная topology должна содержать словарь
-без "дублей" сразу после создания экземпляра.
-
-Пример создания экземпляра класса:
-In [2]: top = Topology(topology_example)
-
-После этого, должна быть доступна переменная topology:
-
-In [3]: top.topology
-Out[3]:
-{('R1', 'Eth0/0'): ('SW1', 'Eth0/1'),
- ('R2', 'Eth0/0'): ('SW1', 'Eth0/2'),
- ('R2', 'Eth0/1'): ('SW2', 'Eth0/11'),
- ('R3', 'Eth0/0'): ('SW1', 'Eth0/3'),
- ('R3', 'Eth0/1'): ('R4', 'Eth0/0'),
- ('R3', 'Eth0/2'): ('R5', 'Eth0/0')}
-
-"""
-
-topology_example = {
-    ("R1", "Eth0/0"): ("SW1", "Eth0/1"),
-    ("R2", "Eth0/0"): ("SW1", "Eth0/2"),
-    ("R2", "Eth0/1"): ("SW2", "Eth0/11"),
-    ("R3", "Eth0/0"): ("SW1", "Eth0/3"),
-    ("R3", "Eth0/1"): ("R4", "Eth0/0"),
-    ("R3", "Eth0/2"): ("R5", "Eth0/0"),
-    ("SW1", "Eth0/1"): ("R1", "Eth0/0"),
-    ("SW1", "Eth0/2"): ("R2", "Eth0/0"),
-    ("SW1", "Eth0/3"): ("R3", "Eth0/0"),
-}
+    def delete_node(self, node):
+        deleted = False
+        for src, dst in list(self.topology.items()):
+            if src[0] == node or dst[0] == node:
+                del self.topology[src]
+                deleted = True
+        if not deleted:
+            print("Такого устройства нет")

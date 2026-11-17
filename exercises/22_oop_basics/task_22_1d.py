@@ -1,58 +1,36 @@
-# -*- coding: utf-8 -*-
+class Topology:
+    def __init__(self, topology_dict):
+        self.topology = self._normalize(topology_dict)
 
-"""
-Задание 22.1d
+    def _normalize(self, topology_dict):
+        topology = {}
+        for src, dst in topology_dict.items():
+            if topology.get(dst) != src:
+                topology[src] = dst
+        return topology
 
-Изменить класс Topology из задания 22.1c
+    def delete_link(self, src, dst):
+        if self.topology.get(src) == dst:
+            del self.topology[src]
+        elif self.topology.get(dst) == src:
+            del self.topology[dst]
+        else:
+            print("Такого соединения нет")
 
-Добавить метод add_link, который добавляет указанное соединение, если его еще
- нет в топологии.
-Если соединение существует, вывести сообщение "Такое соединение существует",
-Если одна из сторон есть в топологии, вывести сообщение
-"Соединение с одним из портов существует"
+    def delete_node(self, node):
+        deleted = False
+        for src, dst in list(self.topology.items()):
+            if src[0] == node or dst[0] == node:
+                del self.topology[src]
+                deleted = True
+        if not deleted:
+            print("Такого устройства нет")
 
-
-Создание топологии
-In [7]: t = Topology(topology_example)
-
-In [8]: t.topology
-Out[8]:
-{('R1', 'Eth0/0'): ('SW1', 'Eth0/1'),
- ('R2', 'Eth0/0'): ('SW1', 'Eth0/2'),
- ('R2', 'Eth0/1'): ('SW2', 'Eth0/11'),
- ('R3', 'Eth0/0'): ('SW1', 'Eth0/3'),
- ('R3', 'Eth0/1'): ('R4', 'Eth0/0'),
- ('R3', 'Eth0/2'): ('R5', 'Eth0/0')}
-
-In [9]: t.add_link(('R1', 'Eth0/4'), ('R7', 'Eth0/0'))
-
-In [10]: t.topology
-Out[10]:
-{('R1', 'Eth0/0'): ('SW1', 'Eth0/1'),
- ('R1', 'Eth0/4'): ('R7', 'Eth0/0'),
- ('R2', 'Eth0/0'): ('SW1', 'Eth0/2'),
- ('R2', 'Eth0/1'): ('SW2', 'Eth0/11'),
- ('R3', 'Eth0/0'): ('SW1', 'Eth0/3'),
- ('R3', 'Eth0/1'): ('R4', 'Eth0/0'),
- ('R3', 'Eth0/2'): ('R5', 'Eth0/0')}
-
-In [11]: t.add_link(('R1', 'Eth0/4'), ('R7', 'Eth0/0'))
-Такое соединение существует
-
-In [12]: t.add_link(('R1', 'Eth0/4'), ('R7', 'Eth0/5'))
-Соединение с одним из портов существует
-
-
-"""
-
-topology_example = {
-    ("R1", "Eth0/0"): ("SW1", "Eth0/1"),
-    ("R2", "Eth0/0"): ("SW1", "Eth0/2"),
-    ("R2", "Eth0/1"): ("SW2", "Eth0/11"),
-    ("R3", "Eth0/0"): ("SW1", "Eth0/3"),
-    ("R3", "Eth0/1"): ("R4", "Eth0/0"),
-    ("R3", "Eth0/2"): ("R5", "Eth0/0"),
-    ("SW1", "Eth0/1"): ("R1", "Eth0/0"),
-    ("SW1", "Eth0/2"): ("R2", "Eth0/0"),
-    ("SW1", "Eth0/3"): ("R3", "Eth0/0"),
-}
+    def add_link(self, src, dst):
+        ports = set(self.topology) | set(self.topology.values())
+        if self.topology.get(src) == dst or self.topology.get(dst) == src:
+            print("Такое соединение существует")
+        elif src in ports or dst in ports:
+            print("Соединение с одним из портов существует")
+        else:
+            self.topology[src] = dst

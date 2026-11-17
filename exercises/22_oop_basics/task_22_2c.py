@@ -1,65 +1,55 @@
-# -*- coding: utf-8 -*-
+import re
+import textfsm
+from task_22_2 import CiscoTelnet as BaseCiscoTelnet
 
-"""
-Задание 22.2c
 
-Скопировать класс CiscoTelnet из задания 22.2b и изменить метод send_config_commands
-добавив проверку команд на ошибки.
+class CiscoTelnet(BaseCiscoTelnet):
+    def __init__(self, ip, username, password, secret):
+        super().__init__(ip, username, password, secret)
 
-У метода send_config_commands должен быть дополнительный параметр strict:
-* strict=True значит, что при обнаружении ошибки, необходимо сгенерировать
-  исключение ValueError (значение по умолчанию)
-* strict=False значит, что при обнаружении ошибки, надо только вывести
-  на стандартный поток вывода сообщене об ошибке
+    def send_show_command(self, command, parse=True, templates="templates", index="index"):
+        self._write_line(command)
+        command_output = self.telnet.read_until(b"#").decode("utf-8")
+        if not parse:
+            return command_output
+        with open(index) as f:
+            index_content = f.read()
+        template = None
+        for line in index_content.splitlines():
+            template_name, regex, description = line.split(",")
+            if re.search(regex, command):
+                template = templates + "/" + template_name
+                break
+        if template is None:
+            print("Шаблон не найден")
+            return command_output
+        with open(template) as f:
+            fsm = textfsm.TextFSM(f)
+        result = fsm.ParseText(command_output)
+        return [dict(zip(fsm.header, row)) for row in result]
 
-Метод дожен возвращать вывод аналогичный методу send_config_set
-у netmiko (пример вывода ниже). Текст исключения и ошибки в примере ниже.
-
-Пример создания экземпляра класса:
-In [1]: from task_22_2c import CiscoTelnet
-
-In [2]: r1_params = {
-   ...:     'ip': '192.168.100.1',
-   ...:     'username': 'cisco',
-   ...:     'password': 'cisco',
-   ...:     'secret': 'cisco'}
-
-In [3]: r1 = CiscoTelnet(**r1_params)
-
-In [4]: commands_with_errors = ['logging 0255.255.1', 'logging', 'a']
-In [5]: correct_commands = ['logging buffered 20010', 'ip http server']
-In [6]: commands = commands_with_errors+correct_commands
-
-Использование метода send_config_commands:
-
-In [7]: print(r1.send_config_commands(commands, strict=False))
-При выполнении команды "logging 0255.255.1" на устройстве 192.168.100.1 возникла ошибка -> Invalid input detected at '^' marker.
-При выполнении команды "logging" на устройстве 192.168.100.1 возникла ошибка -> Incomplete command.
-При выполнении команды "a" на устройстве 192.168.100.1 возникла ошибка -> Ambiguous command:  "a"
-conf t
-Enter configuration commands, one per line.  End with CNTL/Z.
-R1(config)#logging 0255.255.1
-                   ^
-% Invalid input detected at '^' marker.
-
-R1(config)#logging
-% Incomplete command.
-
-R1(config)#a
-% Ambiguous command:  "a"
-R1(config)#logging buffered 20010
-R1(config)#ip http server
-R1(config)#end
-R1#
-
-In [8]: print(r1.send_config_commands(commands, strict=True))
----------------------------------------------------------------------------
-ValueError                                Traceback (most recent call last)
-<ipython-input-8-0abc1ed8602e> in <module>
-----> 1 print(r1.send_config_commands(commands, strict=True))
-
-...
-
-ValueError: При выполнении команды "logging 0255.255.1" на устройстве 192.168.100.1 возникла ошибка -> Invalid input detected at '^' marker.
-
-"""
+    def send_config_commands(self, commands, strict=True):
+        if isinstance(commands, str):
+            commands = [commands]
+        self._write_line("conf t")
+        errors = {}
+        for command in commands:
+            self._write_line(command)
+            output = self.telnet.read_until(b"#").decode("utf-8")
+            if "%" in output:
+                if "Invalid input detected" in output:
+                    errors[command] = "incorrect_command"
+                elif "Incomplete command" in output:
+                    errors[command] = "ignored_command"
+        self._write_line("end")
+        if errors:
+            message = ("При выполнении команд на устройстве {} возникли ошибки:\n"
+                       "incorrect_command:\n{}\nignored_command:\n{}\n").format(
+                self.telnet.host,
+                "\n".join(c for c, t in errors.items() if t == "incorrect_command"),
+                "\n".join(c for c, t in errors.items() if t == "ignored_command"),
+            )
+            if strict:
+                raise ValueError(message)
+            print(message)
+        return output
